@@ -1,0 +1,9 @@
+vendor/
+.idea
+config/*.json
+bin/wt
+bin/logs
+logs/
+go-binance
+*.DS_Store 
+*.env
