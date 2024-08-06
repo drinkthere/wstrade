@@ -2,7 +2,6 @@ package trading
 
 import (
 	binanceFutures "github.com/dictxwang/go-binance/futures"
-	"github.com/gorilla/websocket"
 	"time"
 	"wstrade/client"
 	"wstrade/config"
@@ -10,27 +9,11 @@ import (
 	"wstrade/utils/logger"
 )
 
-type BinanceTradingWebSocket struct {
-	conn *websocket.Conn
-}
-
-func newBinanceTradingWebSocket() *BinanceTradingWebSocket {
-	return &BinanceTradingWebSocket{
-		conn: nil,
-	}
-}
-
 func StartBinanceTradingWebsocket(globalConfig *config.Config, ctxt *mmcontext.GlobalContext) {
-	tradingWs := newBinanceTradingWebSocket()
-	tradingWs.ConnectAndLogon(globalConfig)
+	StartWsOrderConnection(globalConfig, ctxt)
 }
 
-func (tw *BinanceTradingWebSocket) handleError(err error) {
-	// 出错断开连接，再重连
-	logger.Error("[BinanceTradingWs] Binance Connection Handler Error And Reconnect Ws: %s", err.Error())
-}
-
-func (tw *BinanceTradingWebSocket) ConnectAndLogon(globalConfig *config.Config) {
+func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalContext) {
 	go func() {
 		defer func() {
 			if rc := recover(); rc != nil {
@@ -64,6 +47,10 @@ func (tw *BinanceTradingWebSocket) ConnectAndLogon(globalConfig *config.Config) 
 					logger.Warn("[OrderWebSocket] Will Reconnect Futures-Order-WebSocket After 1 Second")
 					time.Sleep(time.Second * 10)
 					goto ReConnect
+				case pOrder := <-ctxt.PlaceOrderChan:
+					bnClient.FutresWsClient.PlaceOrder(pOrder)
+				case cOrder := <-ctxt.CancelOrderChan:
+					logger.Info("cancel order is %+v", cOrder)
 				}
 			}
 		}
