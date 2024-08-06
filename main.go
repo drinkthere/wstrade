@@ -50,18 +50,28 @@ func main() {
 
 	time.Sleep(5 * time.Second)
 
+	clientOrderID := utils.GetClientOrderID()
+	logger.Info("Client order id is %s", clientOrderID)
 	pOrder := &futures.WsPlaceOrder{
-		Symbol:       "BTCUSDT",
-		Price:        "55000.0",
-		Quantity:     0.002,
-		Side:         "BUY",
-		Type:         "LIMIT",
-		TimeInForce:  "GTX",
-		PositionSide: "BOTH",
-		Timestamp:    time.Now().UnixMilli(),
+		NewClientOrderId: clientOrderID,
+		Symbol:           "BTCUSDT",
+		Price:            "55000.0",
+		Quantity:         0.002,
+		Side:             "BUY",
+		Type:             "LIMIT",
+		TimeInForce:      "GTX",
+		PositionSide:     "BOTH",
+		Timestamp:        time.Now().UnixMilli(),
 	}
 	globalContext.PlaceOrderChan <- pOrder
 
+	time.Sleep(5 * time.Second)
+	cOrder := &futures.WsCancelOrder{
+		OrigClientOrderId: clientOrderID,
+		Symbol:            "BTCUSDT",
+		Timestamp:         time.Now().UnixMilli(),
+	}
+	globalContext.CancelOrderChan <- cOrder
 	// 阻塞主进程
 	for {
 		time.Sleep(24 * time.Hour)

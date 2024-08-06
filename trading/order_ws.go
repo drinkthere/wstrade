@@ -25,7 +25,7 @@ func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalC
 		for {
 		ReConnect:
 			errChan := make(chan *binanceFutures.Error)
-			loginCh := make(chan *binanceFutures.Login)
+			loginCh := make(chan *binanceFutures.LoginResp)
 			orderCh := make(chan *binanceFutures.OrderResp)
 
 			var bnClient = client.BinanceClient{}
@@ -47,10 +47,12 @@ func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalC
 					logger.Warn("[OrderWebSocket] Will Reconnect Futures-Order-WebSocket After 1 Second")
 					time.Sleep(time.Second * 10)
 					goto ReConnect
+				case r := <-orderCh:
+					logger.Info("order op result %+v", r)
 				case pOrder := <-ctxt.PlaceOrderChan:
 					bnClient.FutresWsClient.PlaceOrder(pOrder)
 				case cOrder := <-ctxt.CancelOrderChan:
-					logger.Info("cancel order is %+v", cOrder)
+					bnClient.FutresWsClient.CancelOrder(cOrder)
 				}
 			}
 		}
