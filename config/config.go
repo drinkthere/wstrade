@@ -44,6 +44,9 @@ type Config struct {
 	// 币安配置
 	BinanceAPIKey    string
 	BinanceSecretKey string
+	// 币安配置
+	BinanceWsAPIKey    string
+	BinanceWsSecretKey string
 
 	// Okx配置
 	OkxAPIKey    string

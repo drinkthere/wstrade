@@ -68,6 +68,7 @@ func (tw *BinanceTradingWebSocket) ConnectAndLogon(globalConfig *config.Config) 
 
 			// logon
 
+			binanceFutures.WsLogon(conn, utils.GetClientOrderID(), globalConfig.BinanceWsAPIKey, globalConfig.BinanceWsSecretKey)
 		}
 	}()
 }
