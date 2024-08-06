@@ -10,16 +10,20 @@ import (
 )
 
 type BinanceClient struct {
-	futuresClient *futures.Client
-	limiter       *rate.Limiter
-	limitProcess  int
+	FuturesClient  *futures.Client
+	FutresWsClient *futures.ClientWs
+	limiter        *rate.Limiter
+	limitProcess   int
 }
 
 func (cli *BinanceClient) Init(cfg *config.Config) bool {
+	ctx := context.Background()
 	if cfg.LocalBinanceIP == "" {
-		cli.futuresClient = futures.NewClient(cfg.BinanceAPIKey, cfg.BinanceSecretKey)
+		cli.FuturesClient = futures.NewClient(cfg.BinanceAPIKey, cfg.BinanceSecretKey)
+		cli.FutresWsClient = futures.NewTradingWsClient(ctx, cfg.BinanceWsAPIKey, cfg.BinanceWsSecretKey, "")
 	} else {
-		cli.futuresClient = futures.NewClientWithIP(cfg.BinanceAPIKey, cfg.BinanceSecretKey, cfg.LocalBinanceIP)
+		cli.FuturesClient = futures.NewClientWithIP(cfg.BinanceAPIKey, cfg.BinanceSecretKey, cfg.LocalBinanceIP)
+		cli.FutresWsClient = futures.NewTradingWsClient(ctx, cfg.BinanceWsAPIKey, cfg.BinanceWsSecretKey, cfg.LocalBinanceIP)
 	}
 
 	limit := rate.Every(1 * time.Second / time.Duration(cfg.APILimit))

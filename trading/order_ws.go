@@ -4,23 +4,19 @@ import (
 	binanceFutures "github.com/dictxwang/go-binance/futures"
 	"github.com/gorilla/websocket"
 	"time"
+	"wstrade/client"
 	"wstrade/config"
 	mmcontext "wstrade/context"
-	"wstrade/utils"
 	"wstrade/utils/logger"
 )
 
 type BinanceTradingWebSocket struct {
-	conn      *websocket.Conn
-	isStopped bool
-	stopChan  chan struct{}
+	conn *websocket.Conn
 }
 
 func newBinanceTradingWebSocket() *BinanceTradingWebSocket {
 	return &BinanceTradingWebSocket{
-		conn:      nil,
-		isStopped: true,
-		stopChan:  make(chan struct{}),
+		conn: nil,
 	}
 }
 
@@ -29,15 +25,9 @@ func StartBinanceTradingWebsocket(globalConfig *config.Config, ctxt *mmcontext.G
 	tradingWs.ConnectAndLogon(globalConfig)
 }
 
-func (tw *BinanceTradingWebSocket) handleTradingConnection(resp *binanceFutures.WsTradingConnectionResp) {
-	logger.Info("[BinanceTradingWs] Trading Ws Connection Response: %+v", resp)
-}
-
 func (tw *BinanceTradingWebSocket) handleError(err error) {
 	// 出错断开连接，再重连
 	logger.Error("[BinanceTradingWs] Binance Connection Handler Error And Reconnect Ws: %s", err.Error())
-	tw.stopChan <- struct{}{}
-	tw.isStopped = true
 }
 
 func (tw *BinanceTradingWebSocket) ConnectAndLogon(globalConfig *config.Config) {
@@ -50,25 +40,32 @@ func (tw *BinanceTradingWebSocket) ConnectAndLogon(globalConfig *config.Config) 
 			logger.Warn("[BinanceTradingWs] Create Trading Connection and Logon")
 		}()
 		for {
-			if !tw.isStopped {
-				time.Sleep(time.Second * 1)
-				continue
-			}
-			conn, _, stopChan, err := binanceFutures.WsTradingConnect(globalConfig.LocalBinanceIP, utils.GetClientOrderID(), tw.handleTradingConnection, tw.handleError)
-			if err != nil {
-				logger.Error("[BinanceTradingWs] Connect to Trading Websocket Error: %s", err.Error())
-				time.Sleep(time.Second * 1)
-				continue
-			}
-			logger.Info("[BinanceTradingWs] Successfully Connect to Trading Websocket")
-			// 重置channel和时间
-			tw.conn = conn
-			tw.stopChan = stopChan
-			tw.isStopped = false
+		ReConnect:
+			errChan := make(chan *binanceFutures.Error)
+			loginCh := make(chan *binanceFutures.Login)
+			orderCh := make(chan *binanceFutures.OrderResp)
 
-			// logon
+			var bnClient = client.BinanceClient{}
+			bnClient.Init(globalConfig)
 
-			binanceFutures.WsLogon(conn, utils.GetClientOrderID(), globalConfig.BinanceWsAPIKey, globalConfig.BinanceWsSecretKey)
+			bnClient.FutresWsClient.SetChannels(errChan, loginCh, orderCh)
+			bnClient.FutresWsClient.Connect()
+			bnClient.FutresWsClient.Login()
+
+			for {
+				select {
+				case err := <-errChan:
+					logger.Error("[OrderWebSocket] Futures-Order Occur Some Error \t%+v", err)
+				case s := <-loginCh:
+					logger.Info("[OrderWebSocket] Login Info: %+v", s)
+				case b := <-bnClient.FutresWsClient.DoneChan:
+					logger.Info("[OrderWebSocket] Futures-Order End\t%v", b)
+					// 暂停一秒再跳出，避免异常时频繁发起重连
+					logger.Warn("[OrderWebSocket] Will Reconnect Futures-Order-WebSocket After 1 Second")
+					time.Sleep(time.Second * 10)
+					goto ReConnect
+				}
+			}
 		}
 	}()
 }
