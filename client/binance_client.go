@@ -17,6 +17,11 @@ type BinanceClient struct {
 }
 
 func (cli *BinanceClient) Init(cfg *config.Config) bool {
+	if cfg.Colo {
+		// 如果配置的是内网，这里需要设置一下
+		futures.UseIntranet = true
+	}
+
 	ctx := context.Background()
 	if cfg.LocalBinanceIP == "" {
 		cli.FuturesClient = futures.NewClient(cfg.BinanceAPIKey, cfg.BinanceSecretKey)
@@ -24,11 +29,6 @@ func (cli *BinanceClient) Init(cfg *config.Config) bool {
 	} else {
 		cli.FuturesClient = futures.NewClientWithIP(cfg.BinanceAPIKey, cfg.BinanceSecretKey, cfg.LocalBinanceIP)
 		cli.FuturesWsClient = futures.NewTradingWsClient(ctx, cfg.BinanceWsAPIKey, cfg.BinanceWsSecretKey, cfg.LocalBinanceIP)
-	}
-
-	if cfg.Colo {
-		// 如果配置的是内网，这里需要设置一下
-		futures.UseIntranet = true
 	}
 
 	limit := rate.Every(1 * time.Second / time.Duration(cfg.APILimit))
