@@ -26,6 +26,11 @@ func (cli *BinanceClient) Init(cfg *config.Config) bool {
 		cli.FuturesWsClient = futures.NewTradingWsClient(ctx, cfg.BinanceWsAPIKey, cfg.BinanceWsSecretKey, cfg.LocalBinanceIP)
 	}
 
+	if cfg.Colo {
+		// 如果配置的是内网，这里需要设置一下
+		futures.UseIntranet = true
+	}
+
 	limit := rate.Every(1 * time.Second / time.Duration(cfg.APILimit))
 	cli.limiter = rate.NewLimiter(limit, 60)
 	cli.limitProcess = cfg.LimitProcess

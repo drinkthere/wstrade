@@ -3,7 +3,7 @@ module wstrade
 go 1.22.0
 
 require (
-	github.com/dictxwang/go-binance v0.1.10
+	github.com/dictxwang/go-binance v0.1.13
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	go.uber.org/zap v1.27.0
@@ -20,4 +20,4 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 )
 
-replace github.com/dictxwang/go-binance v0.1.10 => ./go-binance
+replace github.com/dictxwang/go-binance v0.1.13 => ./go-binance

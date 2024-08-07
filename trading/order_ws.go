@@ -31,9 +31,9 @@ func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalC
 			var bnClient = client.BinanceClient{}
 			bnClient.Init(globalConfig)
 
-			bnClient.FutresWsClient.SetChannels(errChan, loginCh, orderCh)
-			bnClient.FutresWsClient.Connect()
-			bnClient.FutresWsClient.Login()
+			bnClient.FuturesWsClient.SetChannels(errChan, loginCh, orderCh)
+			bnClient.FuturesWsClient.Connect()
+			bnClient.FuturesWsClient.Login()
 
 			for {
 				select {
@@ -41,7 +41,7 @@ func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalC
 					logger.Error("[OrderWebSocket] Futures-Order Occur Some Error \t%+v", err)
 				case s := <-loginCh:
 					logger.Info("[OrderWebSocket] Login Info: %+v", s)
-				case b := <-bnClient.FutresWsClient.DoneChan:
+				case b := <-bnClient.FuturesWsClient.DoneChan:
 					logger.Info("[OrderWebSocket] Futures-Order End\t%v", b)
 					// 暂停一秒再跳出，避免异常时频繁发起重连
 					logger.Warn("[OrderWebSocket] Will Reconnect Futures-Order-WebSocket After 1 Second")
@@ -50,9 +50,9 @@ func StartWsOrderConnection(globalConfig *config.Config, ctxt *mmcontext.GlobalC
 				case r := <-orderCh:
 					logger.Info("order op result %+v", r)
 				case pOrder := <-ctxt.PlaceOrderChan:
-					bnClient.FutresWsClient.PlaceOrder(pOrder)
+					bnClient.FuturesWsClient.PlaceOrder(pOrder)
 				case cOrder := <-ctxt.CancelOrderChan:
-					bnClient.FutresWsClient.CancelOrder(cOrder)
+					bnClient.FuturesWsClient.CancelOrder(cOrder)
 				}
 			}
 		}
